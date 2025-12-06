@@ -1,0 +1,46 @@
+name: Build CounterStrikeSharp Linux Only
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ "main" ]
+    paths-ignore:
+      - "docfx/**"
+
+env:
+  BUILD_TYPE: Release
+
+jobs:
+  build_linux:
+    runs-on: ubuntu-latest
+    container:
+      image: registry.gitlab.steamos.cloud/steamrt/sniper/sdk:latest
+
+    steps:
+      - name: Prepare env
+        shell: bash
+        run: |
+          echo "GITHUB_SHA_SHORT=${GITHUB_SHA::7}" >> $GITHUB_ENV
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 0
+
+      - name: Build
+        run: |
+          mkdir -p build
+          cd build
+          cmake -G Ninja -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} ..
+          cmake --build . --config ${{env.BUILD_TYPE}} -- -j16
+
+      - name: Prepare output
+        run: |
+          mkdir build/output/
+          mv build/addons build/output/
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: counterstrikesharp-linux
+          path: build/output/
