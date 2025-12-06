@@ -1,0 +1,40 @@
+name: Build CounterStrikeSharp (Linux)
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+      with:
+        submodules: recursive
+
+    - name: Install Dependencies
+      run: |
+        sudo apt update
+        sudo apt install -y git cmake build-essential clang
+
+    - name: Build
+      run: |
+        mkdir build
+        cd build
+        cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_POLICY_VERSION_MINIMUM=3.5
+        cmake --build . --config Release -- -j$(nproc)
+
+    - name: Rename output to counterstrikesharp.so
+      run: |
+        mv build/bin/Release/libcssharp.so build/bin/Release/counterstrikesharp.so
+
+    - name: Upload Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: cssharp-linux
+        path: build/bin/Release/counterstrikesharp.so
